@@ -1,0 +1,13 @@
+*.pyc
+/*.pyc
+__pycache__/
+results/
+*.latk
+input/
+input2/
+output/
+output2/
+checkpoints.zip
+*.ply
+*.DS_Store
+
