@@ -38,14 +38,9 @@ def findAddonPath(name=None):
             return os.path.dirname(url)
     return None
 
-sys.path.append(os.path.join(findAddonPath(), os.path.join("skeleton-tracing", "swig")))
-from trace_skeleton import *
-
-sys.path.append(os.path.join(findAddonPath(), "informative-drawings"))
-from model import Generator 
-
-sys.path.append(os.path.join(findAddonPath(), "pix2pix"))
-from models import pix2pix_model
+from .skeleton_tracing.swig.trace_skeleton import *
+from .informative_drawings.model import Generator 
+from .pix2pix.models import pix2pix_model
 
 
 class latkml005Preferences(bpy.types.AddonPreferences):
