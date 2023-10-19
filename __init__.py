@@ -635,7 +635,7 @@ def getPyTorchDevice():
         device = torch.device("cpu")
     return device
 
-def createPyTorchNetwork(modelPath, net_G, device, input_nc=3, output_nc=1, n_blocks=3):
+def createPyTorchNetwork(modelPath, net_G, device): #, input_nc=3, output_nc=1, n_blocks=3):
     #device = getPyTorchDevice()
     modelPath = getModelPath(modelPath)
     net_G.to(device)
