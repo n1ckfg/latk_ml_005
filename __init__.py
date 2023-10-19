@@ -24,12 +24,10 @@ import latk
 import latk_blender as lb
 from skimage.morphology import skeletonize
 from mathutils import Vector, Quaternion
-
-import argparse
-import sys
-import os
+from collections import namedtuple
 
 import onnxruntime as ort
+import torch
 
 def findAddonPath(name=None):
     if not name:
@@ -42,9 +40,6 @@ def findAddonPath(name=None):
 
 sys.path.append(os.path.join(findAddonPath(), os.path.join("skeleton-tracing", "swig")))
 from trace_skeleton import *
-
-import torch
-from collections import namedtuple
 
 sys.path.append(os.path.join(findAddonPath(), "informative-drawings"))
 from model import Generator 
@@ -634,12 +629,14 @@ def getPyTorchDevice():
     device = None
     if torch.cuda.is_available():
         device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
     else:
         device = torch.device("cpu")
-        return device
+    return device
 
-def createPyTorchNetwork(modelPath, net_G, input_nc=3, output_nc=1, n_blocks=3):
-    device = getPyTorchDevice()
+def createPyTorchNetwork(modelPath, net_G, device, input_nc=3, output_nc=1, n_blocks=3):
+    #device = getPyTorchDevice()
     modelPath = getModelPath(modelPath)
     net_G.to(device)
     net_G.load_state_dict(torch.load(modelPath, map_location=device))
