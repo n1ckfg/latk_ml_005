@@ -100,7 +100,7 @@ class latkml005Properties(bpy.types.PropertyGroup):
             ("ONNX", "ONNX", "...", 0),
             ("PYTORCH", "PyTorch", "...", 1)
         ),
-        default="ONNX"
+        default="PYTORCH"
     )
 
     ModelStyle1: EnumProperty(
