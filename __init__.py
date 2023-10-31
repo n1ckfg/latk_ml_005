@@ -553,7 +553,7 @@ def createOnnxNetwork(modelPath):
     so.enable_cpu_mem_arena = True
     
     #if (ort.get_device().lower() == "gpu"):
-    net = ort.InferenceSession(modelPath, so, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+    net = ort.InferenceSession(modelPath, so, providers=["CUDAExecutionProvider", "CoreMLExecutionProvider", "CPUExecutionProvider"])
     #else:
         #net = ort.InferenceSession(modelPath, so)
 
