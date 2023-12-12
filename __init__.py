@@ -3,7 +3,7 @@ bl_info = {
     "author": "Nick Fox-Gieg",
     "version": (0, 0, 1),
     "blender": (3, 0, 0),
-    "description": "Generate brushstrokes from a mesh using informative-drawings and pix2pix",
+    "description": "Generate brushstrokes from a mesh using informative-drawings, pix2pix, and vox2vox",
     "category": "Animation"
 }
 
@@ -28,6 +28,29 @@ from collections import namedtuple
 
 import onnxruntime as ort
 import torch
+
+import bmesh
+from mathutils import Vector, Matrix
+import h5py
+
+import random
+
+import torch
+from torch.autograd import Variable
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+import itertools
+from torchvision import datasets
+
+import skeletor as sk
+import trimesh
+from scipy.spatial.distance import cdist
+from scipy.spatial import Delaunay
+from scipy.spatial import cKDTree
+import scipy.ndimage as nd
+from pyntcloud import PyntCloud 
+import pandas as pd
+import pdb
 
 def findAddonPath(name=None):
     if not name:
