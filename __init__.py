@@ -86,7 +86,7 @@ class latkml005Preferences(bpy.types.AddonPreferences):
         layout = self.layout
 
         layout.label(text="none")
-        #row = layout.row()
+        #row = box.row()
         #row.prop(self, "extraFormats_Painter")
 
 
@@ -333,56 +333,59 @@ class latkml005Properties_Panel(bpy.types.Panel):
 
         layout = self.layout
 
-        row = layout.row()
+        box = layout.box()
+
+        row = box.row()
         row.operator("latkml005_button.singleframe004")
         row.operator("latkml005_button.allframes004")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "ModelStyle1")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "ModelStyle2")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "lineThreshold")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "distThreshold")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "csize")
         row.prop(latkml005, "maxIter")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "thickness")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "SourceImage")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "Backend")
 
         # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+        box = layout.box()
 
-        row = layout.row()
+        row = box.row()
         row.operator("latkml005_button.singleframe003")
         row.operator("latkml005_button.allframes003")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "Operation1")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "do_filter")
         row.prop(latkml005, "do_recenter")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "Operation2")
 
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "Operation3")
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "thickness")
-        row = layout.row()
+        row = box.row()
         row.prop(latkml005, "strokegen_radius")
         row.prop(latkml005, "strokegen_minPointsCount")
 
