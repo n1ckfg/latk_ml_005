@@ -240,9 +240,7 @@ class latkml005_Button_AllFrames_003(bpy.types.Operator):
     bl_options = {'UNDO'}
     
     def execute(self, context):
-
         doVoxelOpCore(context, allFrames=True)
-
         return {'FINISHED'}
 
 
@@ -691,3 +689,14 @@ def doVoxelOpCore(context, allFrames=False):
         else:
             strokeGen(verts, colors, matrix_world=matrix_world, radius=seqAbs * latkml005.strokegen_radius, minPointsCount=latkml005.strokegen_minPointsCount, origin=obj.location) #limitPalette=context.scene.latk_settings.paletteLimit)
 
+    if (latkml005.do_modifiers == True):
+        gp = lb.getActiveGp()
+        
+        bpy.ops.object.gpencil_modifier_add(type="GP_SIMPLIFY")
+        gp.grease_pencil_modifiers["Simplify"].mode = "MERGE"
+        gp.grease_pencil_modifiers["Simplify"].distance = latkml005.strokegen_radius
+
+        bpy.ops.object.gpencil_modifier_add(type="GP_SUBDIV")
+
+        bpy.ops.object.gpencil_modifier_add(type="GP_SMOOTH")
+        gp.grease_pencil_modifiers["Smooth"].use_keep_shape = True
