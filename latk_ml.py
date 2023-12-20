@@ -117,6 +117,17 @@ def strokeGen(verts, colors, matrix_world=None, radius=2, minPointsCount=5, orig
             lb.createPoint(stroke, i, point, pressure, strength, strokeColors[i])
 
     bpy.context.scene.cursor.location = origCursorLocation
+
+    if (latkml005.do_modifiers == True):
+        bpy.ops.object.gpencil_modifier_add(type="GP_SIMPLIFY")
+        gp.grease_pencil_modifiers["Simplify"].mode = "MERGE"
+        gp.grease_pencil_modifiers["Simplify"].distance = latkml005.strokegen_radius
+
+        bpy.ops.object.gpencil_modifier_add(type="GP_SUBDIV")
+
+        bpy.ops.object.gpencil_modifier_add(type="GP_SMOOTH")
+        gp.grease_pencil_modifiers["Smooth"].use_keep_shape = True
+
     return gp
 
 def contourGen(verts, faces, matrix_world):

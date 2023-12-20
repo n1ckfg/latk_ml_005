@@ -202,6 +202,12 @@ class latkml005Properties(bpy.types.PropertyGroup):
         default=True
     )
 
+    do_modifiers: BoolProperty(
+        name="Modifiers",
+        description="...",
+        default=True
+    )
+
     do_recenter: BoolProperty(
         name="Recenter",
         description="...",
@@ -356,6 +362,7 @@ class latkml005Properties_Panel(bpy.types.Panel):
 
         row = box.row()
         row.prop(latkml005, "do_filter")
+        row.prop(latkml005, "do_modifiers")
         row.prop(latkml005, "do_recenter")
 
         row = box.row()
