@@ -19,6 +19,8 @@ import bmesh
 
 import os
 import sys
+import subprocess
+import platform
 import argparse
 import cv2
 import numpy as np
@@ -50,6 +52,37 @@ from . latk_ml import *
 from . latk_pytorch import *
 from . latk_onnx import *
 
+def runCmd(cmd, shell=False):
+    returns = ""
+    try:
+        returns = subprocess.check_output(cmd, text=True, shell=shell)
+    except subprocess.CalledProcessError as e:
+        returns = f"Command failed with return code {e.returncode}"
+    print(returns)
+    return returns  
+
+def getPythonExe():
+    returns = None
+    whichPlatform = platform.system().lower()
+    
+    if (whichPlatform == "darwin"):
+        returns = os.path.join(sys.prefix, "bin", "python3.10")
+    elif (whichPlatform == "windows"):
+        returns = os.path.join(sys.prefix, "bin", "python.exe")
+    else:
+        returns = os.path.join(sys.prefix, "bin", "python3.10")
+    
+    return returns
+
+def findAddonPath(name=None):
+    if not name:
+        name = __name__
+    for mod in addon_utils.modules():
+        if mod.bl_info["name"] == name:
+            url = mod.__file__
+            return os.path.dirname(url)
+    return None
+
 
 class latkml005Preferences(bpy.types.AddonPreferences):
     bl_idname = __name__
@@ -66,11 +99,16 @@ class latkml005Preferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        layout.label(text="Inference")
+        box = layout.box()
+        row = box.row()
+        row.operator("latkml005_button.install_requirements")
 
         box = layout.box()
         row = box.row()
         row.prop(self, "Backend")
+        row.operator("latkml005_button.install_pytorch")
+        row.operator("latkml005_button.install_onnx_cpu")
+        row.operator("latkml005_button.install_onnx_gpu")
 
 
 # This is needed to display the preferences menu
@@ -222,6 +260,55 @@ class latkml005Properties(bpy.types.PropertyGroup):
     )
 
 
+class latkml005_Button_InstallRequirements(bpy.types.Operator):
+    bl_idname = "latkml005_button.install_requirements"
+    bl_label = "Install Requirements"
+    
+    def execute(self, context):
+        python_exe = getPythonExe()
+        requirements_url = os.path.join(findAddonPath(), "requirements.txt")
+        runCmd([python_exe, "-m", "pip", "install", "-r", requirements_url])
+        return {'FINISHED'}
+
+
+class latkml005_Button_InstallOnnxCpu(bpy.types.Operator):
+    bl_idname = "latkml005_button.install_onnx_cpu"
+    bl_label = "Install ONNX CPU"
+    
+    def execute(self, context):
+        python_exe = getPythonExe()
+        runCmd([python_exe, "-m", "pip", "uninstall", "onnxruntime-gpu"])
+        runCmd([python_exe, "-m", "pip", "install", "onnxruntime"])
+        return {'FINISHED'}
+
+
+class latkml005_Button_InstallOnnxGpu(bpy.types.Operator):
+    bl_idname = "latkml005_button.install_onnx_gpu"
+    bl_label = "Install ONNX GPU"
+    
+    def execute(self, context):
+        python_exe = getPythonExe()
+        runCmd([python_exe, "-m", "pip", "uninstall", "onnxruntime"])
+        runCmd([python_exe, "-m", "pip", "install", "onnxruntime-gpu"])
+        return {'FINISHED'}
+
+
+class latkml005_Button_InstallPytorch(bpy.types.Operator):
+    bl_idname = "latkml005_button.install_pytorch"
+    bl_label = "Install Pytorch"
+    
+    def execute(self, context):       
+        python_exe = getPythonExe()
+        whichPlatform = platform.system().lower()
+        
+        if (whichPlatform == "darwin"):
+            runCmd([python_exe, '-m', 'pip', 'install', '--pre', 'torch', 'torchvision', 'torchaudio', '--index-url', 'https://download.pytorch.org/whl/nightly/cpu'])
+        else:
+            runCmd([python_exe, '-m', 'pip', 'install', '--upgrade', 'torch', 'torchvision', 'torchaudio', '-f', 'https://download.pytorch.org/whl/torch_stable.html'])
+
+        return {'FINISHED'}
+
+
 class latkml005_Button_AllFrames_003(bpy.types.Operator):
     """Operate on all frames"""
     bl_idname = "latkml005_button.allframes003"
@@ -369,7 +456,11 @@ classes = (
     latkml005_Button_AllFrames_004,
     latkml005_Button_SingleFrame_004,
     latkml005_Button_AllFrames_003,
-    latkml005_Button_SingleFrame_003
+    latkml005_Button_SingleFrame_003,
+    latkml005_Button_InstallRequirements,
+    latkml005_Button_InstallOnnxCpu,
+    latkml005_Button_InstallOnnxGpu,
+    latkml005_Button_InstallPytorch
 )
 
 def register():

@@ -2,7 +2,7 @@ import os
 import addon_utils
 import bpy
 import gpu
-import bgl
+#import bgl
 from mathutils import Vector, Matrix
 import bmesh
 
