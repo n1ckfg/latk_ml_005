@@ -9,7 +9,7 @@ bl_info = {
 
 import bpy
 import gpu
-import bgl
+#import bgl
 from bpy.types import Operator, AddonPreferences
 from bpy.props import (BoolProperty, FloatProperty, StringProperty, IntProperty, PointerProperty, EnumProperty)
 from bpy_extras.io_utils import (ImportHelper, ExportHelper)
@@ -54,20 +54,23 @@ from . latk_onnx import *
 class latkml005Preferences(bpy.types.AddonPreferences):
     bl_idname = __name__
 
-    '''
-    extraFormats_AfterEffects: bpy.props.BoolProperty(
-        name = 'After Effects JSX',
-        description = "After Effects JSX export",
-        default = False
+    Backend: EnumProperty(
+        name="Backend",
+        items=(
+            ("ONNX", "ONNX", "...", 0),
+            ("PYTORCH", "PyTorch", "...", 1)
+        ),
+        default="PYTORCH"
     )
-    '''
 
     def draw(self, context):
         layout = self.layout
 
-        layout.label(text="none")
-        #row = box.row()
-        #row.prop(self, "extraFormats_Painter")
+        layout.label(text="Inference")
+
+        box = layout.box()
+        row = box.row()
+        row.prop(self, "Backend")
 
 
 # This is needed to display the preferences menu
@@ -97,15 +100,6 @@ class latkml005Properties(bpy.types.PropertyGroup):
         default="RGB"
     )
 
-    Backend: EnumProperty(
-        name="Backend",
-        items=(
-            ("ONNX", "ONNX", "...", 0),
-            ("PYTORCH", "PyTorch", "...", 1)
-        ),
-        default="PYTORCH"
-    )
-
     ModelStyle1: EnumProperty(
         name="Model1",
         items=(
@@ -130,11 +124,6 @@ class latkml005Properties(bpy.types.PropertyGroup):
         ),
         default="NONE"
     )    
-    '''
-    lineThreshold = 64
-    csize = 10
-    maxIter = 999
-    '''
 
     lineThreshold: FloatProperty(
         name="Line Threshold",
@@ -345,9 +334,6 @@ class latkml005Properties_Panel(bpy.types.Panel):
         row = box.row()
         row.prop(latkml005, "SourceImage")
 
-        row = box.row()
-        row.prop(latkml005, "Backend")
-
         # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
         box = layout.box()
 
@@ -355,13 +341,14 @@ class latkml005Properties_Panel(bpy.types.Panel):
         row.operator("latkml005_button.singleframe003")
         row.operator("latkml005_button.allframes003")
 
-        row = box.row()
-        row.prop(latkml005, "Operation1")
+        if (bpy.context.preferences.addons[__name__].preferences.Backend.lower() == "pytorch"):
+            row = box.row()
+            row.prop(latkml005, "Operation1")
 
-        row = box.row()
-        row.prop(latkml005, "do_filter")
-        row.prop(latkml005, "do_modifiers")
-        row.prop(latkml005, "do_recenter")
+            row = box.row()
+            row.prop(latkml005, "do_filter")
+            row.prop(latkml005, "do_modifiers")
+            row.prop(latkml005, "do_recenter")
 
         row = box.row()
         row.prop(latkml005, "Operation2")
@@ -423,7 +410,7 @@ def modelSelector004(modelName):
     modelName = modelName.lower()
     latkml005 = bpy.context.scene.latkml005_settings
 
-    if (latkml005.Backend.lower() == "pytorch"):
+    if (bpy.context.preferences.addons[__name__].preferences.Backend.lower() == "pytorch"):
         if (modelName == "anime"):
             return Informative_Drawings_PyTorch(__name__, "checkpoints/anime_style/netG_A_latest.pth")
         elif (modelName == "contour"):

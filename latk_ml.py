@@ -118,6 +118,8 @@ def strokeGen(verts, colors, matrix_world=None, radius=2, minPointsCount=5, orig
 
     bpy.context.scene.cursor.location = origCursorLocation
 
+    bpy.data.grease_pencils[gp.name].stroke_depth_order = "3D"
+    
     return gp
 
 def contourGen(verts, faces, matrix_world):
@@ -184,6 +186,9 @@ def contourGen(verts, faces, matrix_world):
     #lb.setThickness(latkml005.thickness)
 
     bpy.context.scene.cursor.location = origCursorLocation
+
+    bpy.data.grease_pencils[gp.name].stroke_depth_order = "3D"
+
     return gp
 
 def skelGen(verts, faces, matrix_world):
@@ -231,6 +236,9 @@ def skelGen(verts, faces, matrix_world):
     #lb.setThickness(latkml005.thickness)
 
     bpy.context.scene.cursor.location = origCursorLocation
+
+    bpy.data.grease_pencils[gp.name].stroke_depth_order = "3D"
+
     return gp
 
 def differenceEigenvalues(verts):
