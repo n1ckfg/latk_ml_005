@@ -1,9 +1,11 @@
+import numpy as np
+import cv2
 import onnxruntime as ort
 import bpy
-from . latk_ml import *
+from . import latk_ml
 
 def createOnnxNetwork(name, modelPath):
-    modelPath = getModelPath(name, modelPath)
+    modelPath = latk_ml.getModelPath(name, modelPath)
     net = None
 
     so = ort.SessionOptions()

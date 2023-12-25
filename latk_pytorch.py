@@ -1,3 +1,6 @@
+import numpy as np
+import cv2
+
 import torch
 from torch.autograd import Variable
 import torchvision.transforms as transforms
@@ -7,14 +10,14 @@ import itertools
 
 import bpy
 
-from . latk_ml import *
+from . import latk_ml 
 
-from .vox2vox.models import *
-from .vox2vox.dataset import CTDataset
+from . vox2vox.models import *
+from . vox2vox.dataset import CTDataset
 
-from .informative_drawings.model import Generator 
+from . informative_drawings.model import Generator 
 
-from .pix2pix.models import pix2pix_model
+from . pix2pix.models import pix2pix_model
 
 def getPyTorchDevice(mps=True):
     device = None
@@ -28,7 +31,7 @@ def getPyTorchDevice(mps=True):
 
 def createPyTorchNetwork(name, modelPath, net_G, device): #, input_nc=3, output_nc=1, n_blocks=3):
     #device = getPyTorchDevice()
-    modelPath = getModelPath(name, modelPath)
+    modelPath = latk_ml.getModelPath(name, modelPath)
     net_G.to(device)
     net_G.load_state_dict(torch.load(modelPath, map_location=device))
     net_G.eval()

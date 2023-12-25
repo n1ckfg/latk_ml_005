@@ -23,15 +23,7 @@ import subprocess
 import platform
 import argparse
 import numpy as np
-
-def import_library(library_name):
-    if library_name in sys.modules:
-        globals()[library_name] = sys.modules[library_name]
-    else:
-        try:
-            globals()[library_name] = __import__(library_name)
-        except ImportError:
-            raise ImportError("Could not import library: {}".format(library_name))
+import latk_blender as lb
 
 def runCmd(cmd, shell=False):
     returns = ""
@@ -71,11 +63,10 @@ class latkml005Preferences(bpy.types.AddonPreferences):
     Backend: EnumProperty(
         name="Backend",
         items=(
-            ("NONE", "None", "...", 0),
-            ("PYTORCH", "PyTorch", "...", 1),
-            ("ONNX", "ONNX", "...", 2)
+            ("PYTORCH", "PyTorch", "...", 0),
+            ("ONNX", "ONNX", "...", 1)
         ),
-        default="NONE"
+        default="PYTORCH"
     )
 
     def draw(self, context):
@@ -334,8 +325,8 @@ class latkml005_Button_AllFrames_004(bpy.types.Operator):
         latkml005 = context.scene.latkml005_settings
         net1, net2 = latk_ml.loadModel004(__name__)
 
-        la = latk.Latk()
-        la.layers.append(latk.LatkLayer())
+        la = latk_ml.latk.Latk()
+        la.layers.append(latk_ml.latk.LatkLayer())
 
         start, end = lb.getStartEnd()
         for i in range(start, end):
@@ -359,8 +350,8 @@ class latkml005_Button_SingleFrame_004(bpy.types.Operator):
         latkml005 = context.scene.latkml005_settings
         net1, net2 = latk_ml.loadModel004(__name__)
 
-        la = latk.Latk()
-        la.layers.append(latk.LatkLayer())
+        la = latk_ml.latk.Latk()
+        la.layers.append(latk_ml.latk.LatkLayer())
         laFrame = latk_ml.doInference004(net1, net2)
         la.layers[0].frames.append(laFrame)
         
@@ -387,34 +378,33 @@ class latkml005Properties_Panel(bpy.types.Panel):
 
         layout = self.layout
 
-        if (bpy.context.preferences.addons[__name__].preferences.Backend.lower() == "pytorch" or bpy.context.preferences.addons[__name__].preferences.Backend.lower() == "onnx"):
-            box = layout.box()
+        box = layout.box()
 
-            row = box.row()
-            row.operator("latkml005_button.singleframe004")
-            row.operator("latkml005_button.allframes004")
+        row = box.row()
+        row.operator("latkml005_button.singleframe004")
+        row.operator("latkml005_button.allframes004")
 
-            row = box.row()
-            row.prop(latkml005, "ModelStyle1")
+        row = box.row()
+        row.prop(latkml005, "ModelStyle1")
 
-            row = box.row()
-            row.prop(latkml005, "ModelStyle2")
+        row = box.row()
+        row.prop(latkml005, "ModelStyle2")
 
-            row = box.row()
-            row.prop(latkml005, "lineThreshold")
+        row = box.row()
+        row.prop(latkml005, "lineThreshold")
 
-            row = box.row()
-            row.prop(latkml005, "distThreshold")
+        row = box.row()
+        row.prop(latkml005, "distThreshold")
 
-            row = box.row()
-            row.prop(latkml005, "csize")
-            row.prop(latkml005, "maxIter")
+        row = box.row()
+        row.prop(latkml005, "csize")
+        row.prop(latkml005, "maxIter")
 
-            row = box.row()
-            row.prop(latkml005, "thickness")
+        row = box.row()
+        row.prop(latkml005, "thickness")
 
-            row = box.row()
-            row.prop(latkml005, "SourceImage")
+        row = box.row()
+        row.prop(latkml005, "SourceImage")
 
         # ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
         box = layout.box()
