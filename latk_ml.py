@@ -29,14 +29,16 @@ from pyntcloud import PyntCloud
 import pandas as pd
 import pdb
 
-from .skeleton_tracing.swig.trace_skeleton import *
+from . skeleton_tracing.swig.trace_skeleton import *
 
 #from . import binvox_rw
-from .vox2vox import binvox_rw
+from . vox2vox import binvox_rw
+from . latk_onnx import *
+from . latk_pytorch import *
 
 def findAddonPath(name=None):
-    if not name:
-        name = __name__
+    #if not name:
+        #name = __name__
     for mod in addon_utils.modules():
         if mod.bl_info["name"] == name:
             url = mod.__file__
@@ -632,3 +634,306 @@ def renderToNp(depthPass=False):
     image_array = np.flipud(image_array)
     image_array = image_array[:, :, :3]
     return image_array.astype(np.float32)
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+def loadModel003(name):
+    latkml005 = bpy.context.scene.latkml005_settings
+    returns = modelSelector003(name, latkml005.Operation1)
+    return returns
+
+def loadModel004(name):
+    latkml005 = bpy.context.scene.latkml005_settings
+   
+    returns1 = modelSelector004(name, latkml005.ModelStyle1)
+    returns2 = modelSelector004(name, latkml005.ModelStyle2)
+
+    return returns1, returns2
+
+def modelSelector003(name, modelName):
+    latkml003 = bpy.context.scene.latkml005_settings
+
+    modelName = modelName.lower()
+    latkml003.dims = int(modelName.split("_")[0])
+    return Vox2Vox_PyTorch(name, "model/" + modelName + ".pth")
+
+def modelSelector004(name, modelName):
+    modelName = modelName.lower()
+    latkml005 = bpy.context.scene.latkml005_settings
+
+    if (bpy.context.preferences.addons[name].preferences.Backend.lower() == "pytorch"):
+        if (modelName == "anime"):
+            return Informative_Drawings_PyTorch(name, "checkpoints/anime_style/netG_A_latest.pth")
+        elif (modelName == "contour"):
+            return Informative_Drawings_PyTorch(name, "checkpoints/contour_style/netG_A_latest.pth")
+        elif (modelName == "opensketch"):
+            return Informative_Drawings_PyTorch(name, "checkpoints/opensketch_style/netG_A_latest.pth")
+        elif (modelName == "pxp_001"):
+            return Pix2Pix_PyTorch(name, "checkpoints/pix2pix002-001_60_net_G.pth")
+        elif (modelName == "pxp_002"):
+            return Pix2Pix_PyTorch(name, "checkpoints/pix2pix002-002_60_net_G.pth")
+        elif (modelName == "pxp_003"):
+            return Pix2Pix_PyTorch(name, "checkpoints/pix2pix002-003_60_net_G.pth")
+        elif (modelName == "pxp_004"):
+            return Pix2Pix_PyTorch(name, "checkpoints/pix2pix002-004_60_net_G.pth")
+        else:
+            return None
+    else:
+        if (modelName == "anime"):
+            return Informative_Drawings_Onnx(name, "onnx/anime_style_512x512_simplified.onnx")
+        elif (modelName == "contour"):
+            return Informative_Drawings_Onnx(name, "onnx/contour_style_512x512_simplified.onnx")
+        elif (modelName == "opensketch"):
+            return Informative_Drawings_Onnx(name, "onnx/opensketch_style_512x512_simplified.onnx")
+        elif (modelName == "pxp_001"):
+            return Pix2Pix_Onnx(name, "onnx/pix2pix004-002_140_net_G_simplified.onnx")
+        elif (modelName == "pxp_002"):
+            return Pix2Pix_Onnx(name, "onnx/pix2pix003-002_140_net_G_simplified.onnx")
+        elif (modelName == "pxp_003"):
+            return Pix2Pix_Onnx(name, "onnx/neuralcontours_140_net_G_simplified.onnx")
+        elif (modelName == "pxp_004"):
+            return Pix2Pix_Onnx(name, "onnx/neuralcontours_140_net_G_simplified.onnx")
+        else:
+            return None
+
+def doInference003(net, verts, dims=256, seqMin=0.0, seqMax=1.0):
+    latkml005 = bpy.context.scene.latkml005_settings
+    
+    bv = vertsToBinvox(verts, dims, doFilter=latkml005.do_filter)
+    h5 = binvoxToH5(bv, dims=dims)
+    writeTempH5(h5)
+
+    fake_B = net.detect()
+
+    writeTempBinvox(fake_B, dims=dims)
+    verts = readTempBinvox(dims=dims)
+    dims_ = float(dims - 1)
+
+    for i in range(0, len(verts)):
+        x = lb.remap(verts[i][0], 0.0, dims_, seqMin, seqMax)
+        y = lb.remap(verts[i][1], 0.0, dims_, seqMin, seqMax)
+        z = lb.remap(verts[i][2], 0.0, dims_, seqMin, seqMax)
+        verts[i] = Vector((x, y, z))
+
+    return verts
+
+# https://blender.stackexchange.com/questions/262742/python-bpy-2-8-render-directly-to-matrix-array
+# https://blender.stackexchange.com/questions/2170/how-to-access-render-result-pixels-from-python-script/3054#3054
+def doInference004(net1, net2=None):
+    latkml005 = bpy.context.scene.latkml005_settings
+
+    img_np = None
+    img_cv = None
+    if (latkml005.SourceImage.lower() == "depth"):
+        img_np = renderToNp(depthPass=True) # inference expects np array
+        img_temp = renderToNp()
+        img_cv = npToCv(img_temp) # cv converted image used for color pixels later
+    else:
+        img_np = renderToNp() # inference expects np array
+        img_cv = npToCv(img_np) # cv converted image used for color pixels later
+
+    result = net1.detect(img_np)
+
+    if (net2 != None):
+        result = net2.detect(result)
+
+    outputUrl = os.path.join(bpy.app.tempdir, "output.png")
+    cv2.imwrite(outputUrl, result)
+
+    im0 = cv2.imread(outputUrl)
+    im0 = cv2.bitwise_not(im0) # invert
+    imWidth = len(im0[0])
+    imHeight = len(im0)
+    im = (im0[:,:,0] > latkml005.lineThreshold).astype(np.uint8)
+    im = skeletonize(im).astype(np.uint8)
+    polys = from_numpy(im, latkml005.csize, latkml005.maxIter)
+
+    laFrame = latk.LatkFrame(frame_number=bpy.context.scene.frame_current)
+
+    scene = bpy.context.scene
+    camera = bpy.context.scene.camera
+
+    frame = camera.data.view_frame(scene=bpy.context.scene)
+    topRight = frame[0]
+    bottomRight = frame[1]
+    bottomLeft = frame[2]
+    topLeft = frame[3]
+
+    resolutionX = int(bpy.context.scene.render.resolution_x * (bpy.context.scene.render.resolution_percentage / 100))
+    resolutionY = int(bpy.context.scene.render.resolution_y * (bpy.context.scene.render.resolution_percentage / 100))
+    xRange = np.linspace(topLeft[0], topRight[0], resolutionX)
+    yRange = np.linspace(topLeft[1], bottomLeft[1], resolutionY)
+
+    originalStrokes = []
+    originalStrokeColors = []
+    separatedStrokes = []
+    separatedStrokeColors = []
+
+    # raycasting needs cursor at world origin
+    origCursorLocation = bpy.context.scene.cursor.location
+    bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+    
+    for target in bpy.data.objects:
+        if target.type == "MESH":
+            matrixWorld = target.matrix_world
+            matrixWorldInverted = matrixWorld.inverted()
+            origin = matrixWorldInverted @ camera.matrix_world.translation
+
+            for stroke in polys:
+                newStroke = []
+                newStrokeColor = []
+                for point in stroke:
+                    rgbPixel = img_cv[point[1]][point[0]]
+                    rgbPixel2 = (rgbPixel[2], rgbPixel[1], rgbPixel[0], 1)
+
+                    xPos = lb.remap(point[0], 0, resolutionX, xRange.min(), xRange.max())
+                    yPos = lb.remap(point[1], 0, resolutionY, yRange.max(), yRange.min())
+                   
+                    pixelVector = Vector((xPos, yPos, topLeft[2]))
+                    pixelVector.rotate(camera.matrix_world.to_quaternion())
+                    destination = matrixWorldInverted @ (pixelVector + camera.matrix_world.translation) 
+                    direction = (destination - origin).normalized()
+                    hit, location, norm, face = target.ray_cast(origin, direction)
+
+                    if hit:
+                        location = target.matrix_world @ location
+                        co = (location.x, location.y, location.z)
+                        newStroke.append(co)
+                        newStrokeColor.append(rgbPixel2)
+
+                if (len(newStroke) > 1):
+                    originalStrokes.append(newStroke)
+                    originalStrokeColors.append(newStrokeColor)
+
+        for i in range(0, len(originalStrokes)):
+            separatedTempStrokes, separatedTempStrokeColors = lb.separatePointsByDistance(originalStrokes[i], originalStrokeColors[i], latkml005.distThreshold)
+
+            for j in range(0, len(separatedTempStrokes)):
+                separatedStrokes.append(separatedTempStrokes[j])
+                separatedStrokeColors.append(separatedTempStrokeColors[j])
+
+        for i in range(0, len(separatedStrokes)):
+            laPoints = []
+            for j in range(0, len(separatedStrokes[i])):
+                laPoint = latk.LatkPoint(separatedStrokes[i][j])
+                laPoint.vertex_color = separatedStrokeColors[i][j]
+                laPoints.append(laPoint)
+
+            if (len(laPoints) > 1):
+                laFrame.strokes.append(latk.LatkStroke(laPoints))
+
+    bpy.context.scene.cursor.location = origCursorLocation
+    return laFrame
+
+# ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+
+def doVoxelOpCore(name, context, allFrames=False):
+    latkml005 = context.scene.latkml005_settings
+
+    dims = None
+    
+    op1 = latkml005.Operation1.lower() 
+    op2 = latkml005.Operation2.lower() 
+    op3 = latkml005.Operation3.lower() 
+
+    net1 = None
+    obj = lb.ss()
+    la = lb.latk.Latk(init=True)
+    gp = lb.fromLatkToGp(la, resizeTimeline = False)
+
+    start = bpy.context.scene.frame_current
+    end = start + 1
+    if (allFrames == True):
+        start, end = lb.getStartEnd()
+    #if (op1 != "none"):
+        #start = start - 1
+
+    for i in range(start, end):
+        lb.goToFrame(i)
+
+        origCursorLocation = bpy.context.scene.cursor.location
+        bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+
+        #lb.s(obj)
+        #bpy.context.view_layer.objects.active = obj
+        #bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        #bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
+
+        #verts, colors = lb.getVertsAndColors(target=obj, useWorldSpace=False, useColors=True, useBmesh=False)
+        verts, colors = lb.getVertices(obj, getColors=True, worldSpace=False)
+        #verts = lb.getVertices(obj)
+        faces = lb.getFaces(obj)
+        matrix_world = obj.matrix_world
+        
+        #bounds = obj.dimensions
+        seqAbs = None #(bounds.x + bounds.y + bounds.z) / 3.0
+
+        seqMin = 0.0
+        seqMax = 1.0
+    
+        for vert in verts:
+            x = vert[0]
+            y = vert[1]
+            z = vert[2]
+            if (x < seqMin):
+                seqMin = x
+            if (x > seqMax):
+                seqMax = x
+            if (y < seqMin):
+                seqMin = y
+            if (y > seqMax):
+                seqMax = y
+            if (z < seqMin):
+                seqMin = z
+            if (z > seqMax):
+                seqMax = z
+
+        seqAbs = abs(seqMax - seqMin)
+
+        if (op1 != "none"):
+            if not net1:
+                net1 = loadModel003(name)    
+                dims = latkml005.dims   
+
+            avgPosOrig = None
+            if (latkml005.do_recenter == True):
+                avgPosOrig = getAveragePosition(verts)
+
+            vertsOrig = np.array(verts) #.copy()
+            verts = doInference003(net1, verts, dims, seqMin, seqMax)
+
+            if (latkml005.do_recenter == True):
+                avgPosNew = getAveragePosition(verts)
+                diffPos = avgPosOrig - avgPosNew
+                for i in range(0, len(verts)):
+                    verts[i] = verts[i] + diffPos
+
+            colors = transferVertexColors(vertsOrig, colors, verts)
+
+        if (op2 == "get_edges" and op1 == "none"):
+            vertsOrig = np.array(verts)
+            verts = differenceEigenvalues(verts)
+            colors = transferVertexColors(vertsOrig, colors, verts)           
+
+        bpy.context.scene.cursor.location = origCursorLocation
+
+        #gp = None
+
+        if (op3 == "skel_gen" and op1 == "none"):
+            skelGen(verts, faces, matrix_world=matrix_world)
+        elif (op3 == "contour_gen" and op1 == "none"):
+            contourGen(verts, faces, matrix_world=matrix_world)
+        else:
+            strokeGen(verts, colors, matrix_world=matrix_world, radius=seqAbs * latkml005.strokegen_radius, minPointsCount=latkml005.strokegen_minPointsCount, origin=obj.location) #limitPalette=context.scene.latk_settings.paletteLimit)
+
+    if (latkml005.do_modifiers == True):
+        gp = lb.getActiveGp()
+        
+        bpy.ops.object.gpencil_modifier_add(type="GP_SIMPLIFY")
+        gp.grease_pencil_modifiers["Simplify"].mode = "MERGE"
+        gp.grease_pencil_modifiers["Simplify"].distance = latkml005.strokegen_radius
+
+        bpy.ops.object.gpencil_modifier_add(type="GP_SUBDIV")
+
+        bpy.ops.object.gpencil_modifier_add(type="GP_SMOOTH")
+        gp.grease_pencil_modifiers["Smooth"].use_keep_shape = True
